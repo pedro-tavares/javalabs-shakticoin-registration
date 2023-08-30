@@ -1,0 +1,35 @@
+clients:
+  emailService: http://email-service/email/api/v2
+  smsService: http://sms-service/sms/api/v2
+  walletService: http://wallet-service/wallet/api/v2
+  kycService: http://kyc-user-service/kycuser/api/v2
+  selfyIdService: http://selfyid-service/selfyid/api/v2
+  bizVaultService: http://bizvault-service/bizvault/api/v2
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        eventConsumerBufferSize: 10
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 10
+        permitted-number-of-calls-in-half-open-state: 3
+        recordExceptions:
+          - org.shaktifdn.registration.exception.ExternalServiceDependencyFailure
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        waitDurationInOpenState: 5s
+        allowHealthIndicatorToFail: false
+    instances:
+      bizVaultService:
+        baseConfig: default
+      emailService:
+        baseConfig: default
+      gluuService:
+        baseConfig: default
+      smsService:
+        baseConfig: default
+      selfyIdService:
+        baseConfig: default
+

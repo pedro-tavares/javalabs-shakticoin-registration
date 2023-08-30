@@ -1,0 +1,148 @@
+version: '3.5'
+
+services:
+
+  consul:
+    image: consul:latest
+    command: |
+      sh -c 'set -uex; \
+        consul agent -server -bootstrap-expect=1 -data-dir /consul/data -node=agent-one -enable-script-checks=true -ui -disable-host-node-id -client 0.0.0.0 & \
+        sleep 20 && \
+        curl  --output /dev/null -sX PUT --data-binary @/consul/apisConfigs/shakti-registration-dev.yml http://localhost:8500/v1/kv/apiServices/shakti-registration/dev/data  && \
+       curl  --output /dev/null -sX PUT --data-binary @/consul/apisConfigs/email-dev.yml http://localhost:8500/v1/kv/apiServices/email-service/dev/data  && \
+        tail -f /dev/null'
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+    networks:
+      - consul-net
+    volumes:
+      - './consulFiles/apisConfigs:/consul/apisConfigs'
+
+
+  vault:
+    image: vault
+    container_name: vault
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - consul-net
+    volumes:
+      - ./vault:/opt/
+    command: |
+      sh -c 'set -uex; \
+      chmod +x /opt/run.sh;  \
+      /opt/run.sh;  \
+      tail -f /dev/null'
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888
+    networks:
+      - consul-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.0
+    hostname: kafka
+    ports:
+      - "9092:9092"
+      - "9999:9999"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:19092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
+    depends_on:
+      - zookeeper
+    networks:
+      - consul-net
+
+  shakti-registration:
+    restart: on-failure
+    image: api/shakti-registration:latest
+    tmpfs: /tmp
+    read_only: true
+    volumes:
+      - ./shakti-registration:/opt/app/logs
+    ports:
+      - "8080:8080"
+    networks:
+      - consul-net
+    depends_on:
+      - consul
+      - couchbase
+      - vault
+      - kafka
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - CONSUL_TOKEN=root
+      - ZIPLIKN_HOST=tracing-server
+      - ZIPLIKN_PORT=9411
+      - VAULT_HOST=vault
+      - VAULT_PORT=8200
+      - VAULT_TOKEN=root
+      - kafka.bootstrap.servers=kafka:19092
+      - COUCHBASE_URL=couchbase
+      - JAEGER_HOST=tracing-server
+      - JAEGER_PORT=6831
+
+  couchbase:
+    image: bentonam/couchbase-docker:latest
+    networks:
+      - consul-net
+    ports:
+      - "8091-8094:8091-8094"
+      - "11210:11210"
+    environment:
+      CLUSTER_USERNAME: Administrator
+      CLUSTER_PASSWORD: somepassword
+      CLUSTER_NAME: My Couchbase Cluster
+      SERVICES: data,index,query,fts
+      CLUSTER_RAMSIZE: 500
+      BUCKET: services
+      BUCKET_RAMSIZE: 300
+      NODE_INIT_INDEX_PATH: /opt/couchbase/var/lib/couchbase/indexes
+      RBAC_USERNAME: someuser
+      RBAC_PASSWORD: password123
+
+  tracing-server:
+    image: jaegertracing/all-in-one
+    container_name: tracing-server
+#    mem_limit: 512M
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+    networks:
+      - consul-net
+
+networks:
+  consul-net:
+    driver: bridge
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local

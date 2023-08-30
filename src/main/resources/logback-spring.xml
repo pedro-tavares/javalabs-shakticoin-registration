@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<property name="LOG_DIR_LOCAL" value="./logs"/>
+	<property name="LOG_DIR" value="/opt/app/logs"/>
+
+	<springProfile name="test">
+		<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+			<encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>%d{HH:mm:ss} %5p [%X{traceId}/%X{spanId}] - [%thread] %logger{0} - %msg%n</pattern>
+			</encoder>
+		</appender>
+		<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<file>${LOG_DIR_LOCAL}/shakti-registeration.log</file>
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>%d{HH:mm:ss} %5p [%X{traceId}/%X{spanId}] - [%thread] %logger{0} - %msg%n</pattern>
+			</encoder>
+			<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				<fileNamePattern>${LOG_DIR_LOCAL}/archived/shakti-registeration-%d{yyyy-MM-dd}.%i.log
+				</fileNamePattern>
+				<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+					<maxFileSize>10MB</maxFileSize>
+				</timeBasedFileNamingAndTriggeringPolicy>
+			</rollingPolicy>
+		</appender>
+		<appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+			<appender-ref ref="STDOUT"/>
+			<discardingThreshold>0</discardingThreshold>
+			<queueSize>1</queueSize>
+			<includeCallerData>false</includeCallerData>
+			<neverBlock>true</neverBlock>
+		</appender>
+		<appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+			<discardingThreshold>0</discardingThreshold>
+			<appender-ref ref="FILE"/>
+			<queueSize>1</queueSize>
+			<includeCallerData>false</includeCallerData>
+			<neverBlock>true</neverBlock>
+		</appender>
+	</springProfile>
+	<springProfile name="!test">
+		<appender name="LOG_STASH_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+			<encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+				<providers>
+					<timestamp>
+						<timeZone>UTC</timeZone>
+					</timestamp>
+					<pattern>
+						<omitEmptyFields>true</omitEmptyFields>
+						<pattern>
+							{
+							"appName":"shakti-registeration",
+							"span": "%X{spanId}",
+							"trace": "%X{traceId}",
+							"level": "%level",
+							"pid": "${PID:-}",
+							"thread": "%thread",
+							"class": "%logger{1.}",
+							"message": "%message"
+							}
+						</pattern>
+					</pattern>
+					<stackTrace>
+						<throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+							<maxDepthPerThrowable>10</maxDepthPerThrowable>
+							<maxLength>2048</maxLength>
+							<shortenedClassNameLength>20</shortenedClassNameLength>
+							<!-- generated class names -->
+							<exclude>\$\$FastClassByCGLIB\$\$</exclude>
+							<exclude>\$\$EnhancerBySpringCGLIB\$\$</exclude>
+							<exclude>^sun\.reflect\..*\.invoke</exclude>
+							<!-- JDK internals -->
+							<exclude>^com\.sun\.</exclude>
+							<exclude>^sun\.net\.</exclude>
+							<!-- dynamic invocation -->
+							<exclude>^net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+							<exclude>^org\.springframework\.cglib\.</exclude>
+							<exclude>^org\.springframework\.transaction\.</exclude>
+							<exclude>^org\.springframework\.validation\.</exclude>
+							<exclude>^org\.springframework\.app\.</exclude>
+							<exclude>^org\.springframework\.aop\.</exclude>
+							<exclude>^java\.lang\.reflect\.Method\.invoke</exclude>
+							<!-- Spring plumbing -->
+							<exclude>^org\.springframework\.ws\..*\.invoke</exclude>
+							<exclude>^org\.springframework\.ws\.transport\.</exclude>
+							<exclude>^org\.springframework\.ws\.soap\.saaj\.SaajSoapMessage\.</exclude>
+							<exclude>^org\.springframework\.ws\.client\.core\.WebServiceTemplate\.</exclude>
+							<exclude>^org\.springframework\.web\.filter\.</exclude>
+							<!-- Tomcat internals -->
+							<exclude>^org\.apache\.tomcat\.</exclude>
+							<exclude>^org\.apache\.catalina\.</exclude>
+							<exclude>^org\.apache\.coyote\.</exclude>
+							<exclude>^java\.util\.concurrent\.ThreadPoolExecutor\.runWorker</exclude>
+							<exclude>^java\.lang\.Thread\.run$</exclude>
+							<rootCauseFirst>true</rootCauseFirst>
+							<inlineHash>true</inlineHash>
+						</throwableConverter>
+					</stackTrace>
+				</providers>
+			</encoder>
+		</appender>
+		<appender name="LOG_STASH_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<file>${LOG_DIR}/shakti-registeration.log</file>
+			<encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+				<providers>
+					<timestamp>
+						<timeZone>UTC</timeZone>
+					</timestamp>
+					<pattern>
+						<omitEmptyFields>true</omitEmptyFields>
+						<pattern>
+							{
+							"appName":"shakti-registeration",
+							"span": "%X{spanId}",
+							"trace": "%X{traceId}",
+							"level": "%level",
+							"pid": "${PID:-}",
+							"thread": "%thread",
+							"class": "%logger{1.}",
+							"message": "%message"
+							}
+						</pattern>
+					</pattern>
+					<stackTrace>
+						<throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+							<maxDepthPerThrowable>10</maxDepthPerThrowable>
+							<maxLength>2048</maxLength>
+							<shortenedClassNameLength>20</shortenedClassNameLength>
+							<!-- generated class names -->
+							<exclude>\$\$FastClassByCGLIB\$\$</exclude>
+							<exclude>\$\$EnhancerBySpringCGLIB\$\$</exclude>
+							<exclude>^sun\.reflect\..*\.invoke</exclude>
+							<!-- JDK internals -->
+							<exclude>^com\.sun\.</exclude>
+							<exclude>^sun\.net\.</exclude>
+							<!-- dynamic invocation -->
+							<exclude>^net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+							<exclude>^org\.springframework\.cglib\.</exclude>
+							<exclude>^org\.springframework\.transaction\.</exclude>
+							<exclude>^org\.springframework\.validation\.</exclude>
+							<exclude>^org\.springframework\.app\.</exclude>
+							<exclude>^org\.springframework\.aop\.</exclude>
+							<exclude>^java\.lang\.reflect\.Method\.invoke</exclude>
+							<!-- Spring plumbing -->
+							<exclude>^org\.springframework\.ws\..*\.invoke</exclude>
+							<exclude>^org\.springframework\.ws\.transport\.</exclude>
+							<exclude>^org\.springframework\.ws\.soap\.saaj\.SaajSoapMessage\.</exclude>
+							<exclude>^org\.springframework\.ws\.client\.core\.WebServiceTemplate\.</exclude>
+							<exclude>^org\.springframework\.web\.filter\.</exclude>
+							<!-- Tomcat internals -->
+							<exclude>^org\.apache\.tomcat\.</exclude>
+							<exclude>^org\.apache\.catalina\.</exclude>
+							<exclude>^org\.apache\.coyote\.</exclude>
+							<exclude>^java\.util\.concurrent\.ThreadPoolExecutor\.runWorker</exclude>
+							<exclude>^java\.lang\.Thread\.run$</exclude>
+							<rootCauseFirst>true</rootCauseFirst>
+							<inlineHash>true</inlineHash>
+						</throwableConverter>
+					</stackTrace>
+				</providers>
+			</encoder>
+			<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				<fileNamePattern>${LOG_DIR}/archived/shakti-registeration-%d{yyyy-MM-dd}.%i.log
+				</fileNamePattern>
+				<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+					<maxFileSize>10MB</maxFileSize>
+				</timeBasedFileNamingAndTriggeringPolicy>
+			</rollingPolicy>
+		</appender>
+		<appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+			<appender-ref ref="LOG_STASH_STDOUT"/>
+			<discardingThreshold>0</discardingThreshold>
+			<queueSize>1</queueSize>
+			<includeCallerData>false</includeCallerData>
+			<neverBlock>true</neverBlock>
+		</appender>
+		<appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+			<discardingThreshold>0</discardingThreshold>
+			<appender-ref ref="LOG_STASH_FILE"/>
+			<queueSize>1</queueSize>
+			<includeCallerData>false</includeCallerData>
+			<neverBlock>true</neverBlock>
+		</appender>
+	</springProfile>
+
+	<logger name="org.shaktifdn" level="DEBUG"/>
+	<logger name="org.springframework" level="INFO"/>
+	<logger name="reactor.netty" level="INFO"/>
+	<logger name="io.netty" level="INFO"/>
+
+	<root level="WARN">
+		<appender-ref ref="ASYNC_CONSOLE"/>
+		<appender-ref ref="ASYNC_FILE"/>
+	</root>
+
+</configuration>

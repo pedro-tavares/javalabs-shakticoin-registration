@@ -1,0 +1,93 @@
+
+server:
+  port: 0
+
+spring:
+  opentracing:
+    jaeger:
+      enabled: false
+  cloud:
+    vault:
+      enabled: false
+    bus:
+      enabled: false
+    discovery:
+      enabled: false
+    consul:
+      enabled: false
+      config:
+        enabled: false
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+  couchbase:
+    connection-string: ${COUCHBASE_URL:couchbase://localhost}
+    env:
+      timeouts:
+        query: 60000
+        connect: 5s
+      io:
+        idle-http-connection-timeout: 4s
+    password: ${COUCHBASE_PASSWORD:somepassword}
+    username: ${COUCHBASE_USER_NAME:Administrator}
+  data:
+    couchbase:
+      auto-index: true
+      bucket-name: services
+  jackson:
+    default-property-inclusion: NON_NULL
+  main:
+    allow-bean-definition-overriding: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.reactive.ReactiveManagementWebSecurityAutoConfiguration
+
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        automatic-transition-from-open-to-half-open-enabled: true
+        event-consumer-buffer-size: 10
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 10
+        permitted-number-of-calls-in-half-open-state: 3
+        record-exceptions: org.springframework.web.client.HttpServerErrorException,java.util.concurrent.TimeoutException
+        register-health-indicator: true
+        sliding-window-size: 20
+        wait-duration-in-open-state: 5s
+    instances:
+      onBoardingService:
+        baseConfig: default
+
+clients:
+  iamService: http://iam-service/oxauth/restv1/userinfo
+  emailService: http://email-service/email-otp-service/api/v1
+  mobileOtpService: http://mobile-service/sms-otp-service/api/v1
+  walletService: http://wallet-service/walletservice/api/v1
+  kycService: http://kyc-service/kyc-user-service/api/v2
+  selfyIdService: http://selfyid-service/selfyid/api/v2
+  bountyService: http://bounty-referral-service/bountyreferral/api/v2
+
+gluu:
+  uri: https://iam-qa.shakticoin.com
+  client:
+    id: 6afc3421-1dc4-4217-a786-8a413dde32d6
+    secret: giAZqIEei7s8PlhKArgAsATrYbpYZtl7r7uSZg09
+  webclient:
+    create-user-clientID: 1202.0731f552-c6db-47ef-86e0-3037815b52b0
+    create-user-jskpath: C:/Users/lenovo/Downloads/IAM-QA (1)/IAM-QA/scim-rp.jks
+    create-user-jkspassword: secret
+    create-user-client-keyID:
+
+enable:
+  swagger:
+    plugin: false
+password:
+  recovery:
+    request:
+      expires-in-minutes: 1

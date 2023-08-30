@@ -1,0 +1,7 @@
+clients:
+  emailService: http://email-service/email/api/v2
+  smsService: http://sms-service/sms/api/v2
+  walletService: http://wallet-service/wallet/api/v2
+  kycService: http://kyc-user-service/kycuser/api/v2
+  selfyIdService: http://selfyid-service/selfyid/api/v2
+  bizVaultService: http://bizvault-service/bizvault/api/v2

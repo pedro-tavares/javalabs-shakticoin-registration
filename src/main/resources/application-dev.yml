@@ -1,0 +1,106 @@
+spring:
+  config:
+    import: consul://, vault://
+  couchbase:
+    connection-string: ${COUCHBASE_URL:localhost}
+    env:
+      timeouts:
+        query: 60000
+  data:
+    couchbase:
+      auto-index: true
+      bucket-name: services
+  cloud:
+    vault:
+      fail-fast: true
+      host: ${vault.host:localhost}
+      port: ${vault.port:8200}
+      scheme: http
+      authentication: token
+      token: ${vault.token:root}
+      application-name: ${spring.application.name}
+    consul:
+      host: ${consul.host:localhost}
+      port: ${consul.port:8500}
+      config:
+        enabled: true
+        failFast: true
+        format: YAML
+        data-key: data
+        prefixes: apiServices
+        default-context: ${spring.application.name}
+        profile-separator: '/'
+        acl-token: ${consul.token:root}
+      discovery:
+        instance-id: "${spring.application.name}:${random.int[1,999999]}"
+        healthCheckInterval: 20s
+        acl-token: ${consul.token:root}
+        prefer-ip-address: true
+    loadbalancer:
+      ribbon:
+        enabled: false
+    stream:
+      instanceIndex: ${KAFKA_CONSUMER_PARTITION_NO:0}
+      instanceCount: ${KAFKA_CONSUMER_PARTITION_COUNT:1}
+      function:
+        definition: createUser;kycUserCreated;bountyReferralCreated;selfyIdCreated
+      kafka:
+        binder:
+          brokers: ${kafka.bootstrap.servers:localhost:9092}
+          required-acks: all
+      bindings:
+        createUser-out-0:
+          destination: ${KAFKA_TOPIC_USER_CREATED:CREATE_USER}
+          producer:
+            partitioned: ${KAFKA_CONSUMER_PARTITION_ENABLED:false}
+        kycUserCreated-in-0:
+          destination: ${KAFKA_TOPIC_KYC_USER_CREATED:KYC_USER_CREATED}
+          group: "${spring.application.name}-registration-state"
+        bountyReferralCreated-in-0:
+          destination: ${KAFKA_TOPIC_BOUNTY_CREATED:BOUNTY_CREATED}
+          group: ${spring.application.name}
+        selfyIdCreated-in-0:
+          destination: ${KAFKA_TOPIC_SELFYID_CREATED:SELFYID_CREATED}
+          group: ${spring.application.name}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${gluu.uri}
+      client:
+        provider:
+          gluu:
+            issuer-uri: ${gluu.uri}
+        registration:
+          gluu:
+            client-id: ${gluu.client.id}
+            client-secret: ${gluu.client.secret}
+            authorization-grant-type: client_credentials
+            scope: openid,permission
+            provider: gluu
+
+opentracing:
+  jaeger:
+    log-spans: true
+    udp-sender.host: ${jaeger.host:localhost}
+    udp-sender.port: ${jaeger.port:6831}
+    probabilistic-sampler:
+      sampling-rate: 0.3
+
+gluu:
+  uri: ${gluu.uri}
+  client:
+    id: ${gluu.client.id}
+    secret: ${gluu.client.secret}
+  webclient:
+    create-user-clientID: 1202.89db9007-c260-41d0-8c38-bfa8d1deae0a
+    create-user-jskpath: classpath:scim-rp_dev.jks
+    create-user-jkspassword: secret
+    create-user-client-keyID:
+
+password:
+  recovery:
+    request:
+      expires-in-minutes: 30
+
